@@ -97,7 +97,8 @@ class CategoryResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                    ->visible(fn (): bool => auth()->user()->hasRole('Super Admin')),
                     ExportBulkAction::make()
                 ]),
             ]);

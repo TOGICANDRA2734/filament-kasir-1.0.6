@@ -25,6 +25,8 @@ class OrderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-s-shopping-cart';
 
+    
+
     public static function form(Form $form): Form
     {
         return $form
@@ -34,31 +36,22 @@ class OrderResource extends Resource
                         Forms\Components\Section::make('Info Utama')
                             ->schema([
                                 Forms\Components\TextInput::make('name')
+                                    ->label('Nama Customer')
                                     ->required()
                                     ->maxLength(255),
-                                Forms\Components\Select::make('gender')
-                                    ->options([
-                                        'male' => 'Laki-laki',
-                                        'female' => 'Perempuan',
-                                    ])
-                                    ->required(),
-                                Forms\Components\Textarea::make('notes')
-                                    ->columnSpanFull(),
-                            ]),
-                    ]),
-                Forms\Components\Group::make()
-                    ->schema([
-                        Forms\Components\Section::make('Info Tambahan')
-                            ->schema([
-                                Forms\Components\TextInput::make('email')
-                                    ->email()
+                                Forms\Components\TextInput::make('no_meja')
+                                    ->label("No Meja")
+                                    ->required()
                                     ->maxLength(255),
-                                Forms\Components\TextInput::make('phone')
-                                    ->tel()
-                                    ->maxLength(255),
-                                Forms\Components\DatePicker::make('birthday'),
-                            ]),
-                    ]),
+                                Forms\Components\Textarea::make('notes'),
+                                Forms\Components\TextInput::make('shift')
+                                    ->label('Shift')
+                                    ->disabled() // Make it read-only
+                                    ->default(function () {
+                                        return Order::determineShift(); // Use a static method to determine shift
+                                    })
+                            ])->columns(2),
+                    ])->columnSpanFull(),
                 Forms\Components\Section::make('Produk dipesan')->schema([
                     self::getItemsRepeater(),
                 ]),
@@ -120,22 +113,27 @@ class OrderResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama')
-                    ->description(fn (Order $record): string => ($record->gender ?? '-'))
+                    ->description(fn (Order $record): string => ("No Meja: ". $record->no_meja ?? '-'))
                     ->sortable(),
-                Tables\Columns\TextColumn::make('paymentMethod.name')
-                    ->label('Metode Pembayaran')
-                    ->badge()
+                Tables\Columns\TextColumn::make('shift')
+                    ->label('Shift')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total_price')
                     ->label('Total (Rp)')
+                    ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('paid_amount')
                     ->label('Uang dibayar (Rp)')
+                    ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('change_amount')
                     ->label('Kembalian (Rp)')
+                    ->numeric()
                     ->sortable(),
-               
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('PIC')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
@@ -153,7 +151,8 @@ class OrderResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                    ->visible(fn (): bool => auth()->user()->hasRole('Super Admin')),
                     ExportBulkAction::make()
                 ]),
             ]);
@@ -185,6 +184,7 @@ class OrderResource extends Resource
                     ->options(Product::query()->where('stock', '>', 1)->pluck('name', 'id'))
                     ->required()
                     ->reactive()
+                    ->preload()
                     ->afterStateHydrated(function (Forms\Set $set, Forms\Get $get, $state) {
                         $product = Product::find($state);
                         $set('unit_price', $product?->price ?? 0);

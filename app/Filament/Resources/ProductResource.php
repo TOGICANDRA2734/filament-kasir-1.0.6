@@ -24,7 +24,6 @@ class ProductResource extends Resource
     protected static ?string $cluster = Products::class;
 
     protected static ?int $navigationSort = 100;
-
     
 
     public static function form(Form $form): Form
@@ -51,10 +50,6 @@ class ProductResource extends Resource
                                         $set('slug', Product::generateUniqueSlug($state));
                                     })
                                     ->maxLength(255),
-                                Forms\Components\TextInput::make('barcode')
-                                    ->label('Barcode')
-                                    ->unique(ignoreRecord: true)
-                                    ->maxLength(255)
                                 ]),
                         Forms\Components\Section::make()
                             ->schema([
@@ -87,8 +82,6 @@ class ProductResource extends Resource
                             ])
 
                     ])
-               
-               
             ]);
     }
 
@@ -103,9 +96,7 @@ class ProductResource extends Resource
                     ->description(fn (Product $record): string => ($record->category) ? $record->category->name : '-')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('id')->label('SKU/ID'),
-                Tables\Columns\TextColumn::make('barcode')
-                    ->searchable()
-                    ->sortable(),
+
                 Tables\Columns\BadgeColumn::make('stock')
                     ->label('Stok')
                     ->numeric()
@@ -146,7 +137,8 @@ class ProductResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                    ->visible(fn (): bool => auth()->user()->hasRole('Super Admin')),
                 ]),
             ]);
     }

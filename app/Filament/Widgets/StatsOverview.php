@@ -36,10 +36,10 @@ class StatsOverview extends BaseWidget
         
         $expense = Expense::whereBetween('date_expense', [$startDate, $endDate])->sum('amount');
         return [
-            Stat::make('Total Produk', $product_count),
-            Stat::make('Total Order', $order_count),
-            Stat::make('Omset', 'Rp. '.$omset),
-            Stat::make('Pengeluaran', 'Rp. '.$expense)
+            Stat::make('Total Produk', number_format($product_count,0)),
+            Stat::make('Total Order', number_format($order_count,0)),
+            Stat::make('Omset (Rp.)', number_format($omset,0)),
+            Stat::make('Pengeluaran (Rp.)', number_format($expense,0))
         ];
     }
 }

@@ -21,7 +21,6 @@ class Product extends Model
         'price',
         'is_active',
         'image',
-        'barcode',
         'description'
     ];
 
